@@ -57,9 +57,9 @@ function getCookies(headers) {
  * @param {pool} pool 连接池对象
  * @param {String} url
  * @param {Object} settings fetcher的设置
- * @param {Object} meta meta数据原样返回
+ * @param {Object} extra extra数据原样返回
  */
-function fetcher(pool, url, settings, meta) {
+function fetcher(pool, url, settings, extra) {
     // Automatically acquires a phantom instance and releases it back to the
     // pool when the function resolves or throws
     return pool.use(async (instance) => {
@@ -156,8 +156,8 @@ function fetcher(pool, url, settings, meta) {
 
                 let result = {};
 
-                if (meta) {
-                    result.meta = meta;
+                if (extra) {
+                    result.extra = extra;
                 }
 
                 result.status = status;

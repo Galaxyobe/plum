@@ -25,13 +25,13 @@ let settings = {
     }
 };
 
-let meta = {};
+let extra = {};
 let url = 'https://booking.airasia.com/Flight/Select?o1=PEK&d1=AKL&culture=zh-CN&dd1=2017-06-30&dd2=2017-06-30&r=true&ADT=1&CHD=1&inl=1&s=true&mon=true&cc=CNY&c=false';
 let start = Date.now();
 
 // let url = 'http://www.baidu.com';
 
-Phantom.fetcher(pool, url, settings, meta).then(result => {
+Phantom.fetcher(pool, url, settings, extra).then(result => {
     console.log('result: ' + JSON.stringify(result));
     console.log('use:' + (Date.now() - start) / 1000);
 }).catch(err => {

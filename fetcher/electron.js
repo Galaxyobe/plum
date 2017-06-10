@@ -37,6 +37,9 @@ function Electron(options) {
         : new Promise(resolve => App.once('ready', resolve));
 
     self.options = options || {};
+    setInterval(() => {
+        console.log('running fetch: ' + self.windowCount);
+    }, 60000);
 }
 
 
@@ -49,9 +52,9 @@ function Electron(options) {
  * @param {pool} pool 连接池对象
  * @param {String} url
  * @param {Object} settings fetcher的设置
- * @param {Object} meta meta数据原样返回
+ * @param {Object} extra extra数据原样返回
  */
-Electron.prototype.fetcher = function fetcher(url, settings, meta) {
+Electron.prototype.fetcher = function fetcher(url, settings, extra) {
     var self = this;
     return self.isReady.then(() => new Promise((resolve, reject) => {
         // 处理参数
@@ -72,7 +75,7 @@ Electron.prototype.fetcher = function fetcher(url, settings, meta) {
         // 内部变量
         var fetchTimer = null;
         var returnTimer = null;
-
+        var urlResponseHeaders = null;
         // 新建窗口对象
         let win = new BrowserWindow(settings.window);
 
@@ -95,8 +98,8 @@ Electron.prototype.fetcher = function fetcher(url, settings, meta) {
         async function loadSucceed(datas) {
             // console.log('load-succeed');
             clearTimeout(fetchTimer);
-            if (meta) {
-                datas.meta = meta;
+            if (extra) {
+                datas.extra = extra;
             }
             if (settings.save) {
                 let fileName = url.split('://')[1].replace(/\//g, '-') + ' ' + moment().format('YYYY-MM-DD HH:mm:ss');
@@ -137,27 +140,30 @@ Electron.prototype.fetcher = function fetcher(url, settings, meta) {
                     });
                 }
             }
-            if (!settings.openDevTools) {
-                if (win) win.close();
-            }
             try {
                 datas.cookies = await getCookies();
             } catch (err) {
                 console.error(err);
             }
+            if (!settings.openDevTools) {
+                if (win) win.close();
+            }
+            datas.headers = urlResponseHeaders;
             return resolve(datas);
         }
         async function loadFailed(error) {
             // console.log('load-failed');
             clearTimeout(fetchTimer);
-            if (!settings.openDevTools) {
-                if (win) win.close();
-            }
+
             try {
                 error.cookies = await getCookies();
             } catch (err) {
                 console.error(err);
             }
+            if (!settings.openDevTools) {
+                if (win) win.close();
+            }
+            error.headers = urlResponseHeaders;
             return reject(error);
         };
         function getCookies() {
@@ -185,6 +191,7 @@ Electron.prototype.fetcher = function fetcher(url, settings, meta) {
             // console.log(Date.now() + ' ' + originalURL + ' ' + resourceType + ' <' + httpResponseCode + '>');
             // 处理HttpCode
             if (originalURL === url) {
+                urlResponseHeaders = headers;
                 settings.policy.handlerHttpCode = settings.policy.handlerHttpCode || [];
                 if (settings.policy.handlerHttpCode.indexOf(httpResponseCode) > -1) {
                     if (settings.policy.handlerReturn) {
@@ -211,7 +218,8 @@ Electron.prototype.fetcher = function fetcher(url, settings, meta) {
                 errorCode: errorCode,
                 errorDescription: errorDescription,
                 validatedURL: validatedURL,
-                isMainFrame: isMainFrame
+                isMainFrame: isMainFrame,
+                httpResponseCode: 500
             };
             return loadFailed(error);
         });
@@ -224,7 +232,7 @@ Electron.prototype.fetcher = function fetcher(url, settings, meta) {
             // 获取document
             const js = `(function(){ 
                 var data = {
-                    title: document.title,
+                    // title: document.title,
                     url: document.URL,
                     // cookies: document.cookie,
                     body: document.body.innerHTML,
@@ -235,7 +243,8 @@ Electron.prototype.fetcher = function fetcher(url, settings, meta) {
                 const error = {
                     errorType: 'execute-timeout',
                     url: url,
-                    timeout: settings.executeTimeout
+                    timeout: settings.executeTimeout,
+                    httpResponseCode: 504
                 };
                 clearTimeout(returnTimer);
                 return loadFailed(error);
@@ -246,6 +255,7 @@ Electron.prototype.fetcher = function fetcher(url, settings, meta) {
                     clearTimeout(executeTimer);
                     // console.log('will return at ' + settings.returnTimeout);
                     returnTimer = setTimeout(() => {
+                        result.httpResponseCode = 200;
                         return loadSucceed(result);
                     }, settings.returnTimeout);
                 });
@@ -272,7 +282,8 @@ Electron.prototype.fetcher = function fetcher(url, settings, meta) {
                         const err = {
                             errorType: 'set-cookie-error',
                             error: error,
-                            cookie: cookie
+                            cookie: cookie,
+                            httpResponseCode: 406
                         };
                         event.emit('load-failed', err);
                     }
@@ -290,7 +301,8 @@ Electron.prototype.fetcher = function fetcher(url, settings, meta) {
             const error = {
                 errorType: 'fetch-timeout',
                 url: url,
-                timeout: settings.fetchTimeout
+                timeout: settings.fetchTimeout,
+                httpResponseCode: 504
             };
             return loadFailed(error);
         }, settings.fetchTimeout);

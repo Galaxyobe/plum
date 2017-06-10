@@ -15,7 +15,7 @@ var electron = Electron();
  *          },
  *  proxy: '', // 字符串
  *  cookies:{},
- *  meta:'' // 任意类型 原样返回
+ *  extra:'' // 任意类型 原样返回
  * }
  * @param {any} req
  * @param {any} res
@@ -24,7 +24,16 @@ var electron = Electron();
  */
 async function fetch(req, res, next) {
     let data = req.body;
-    data.meta = data.meta || undefined;
+    if (!data.url) {
+        res.send('ERROR: url is expect');
+        return next();
+    } else {
+        if (data.url.indexOf('http') === -1) {
+            res.send('ERROR: url need schema');
+            return next();
+        }
+    }
+    data.extra = data.extra || undefined;
     let settings = _.clone(DefaultSettings);
     // 参数处理
     // 代理
@@ -33,15 +42,14 @@ async function fetch(req, res, next) {
     }
     // 请求头
     if (data.headers) {
-        const headers = JSON.parse(data.headers);
         let _headers = [];
-        for (let key in headers) {
+        for (let key in data.headers) {
             // 浏览器代理
             if (key.toLocaleLowerCase() === 'user-agent') {
-                settings.contents.userAgent = headers[key];
+                settings.contents.userAgent = data.headers[key];
             } else {
                 // 其他选项
-                _headers.push(key + ':' + headers[key]);
+                _headers.push(key + ':' + data.headers[key]);
             }
         }
         // 组成electron的请求头格式
@@ -53,12 +61,12 @@ async function fetch(req, res, next) {
     // }
     const start = Date.now();
     try {
-        let datas = await electron.fetcher(data.url, settings, data.meta);
+        var datas = await electron.fetcher(data.url, settings, data.extra);
         res.send(datas);
     } catch (err) {
         res.send(err);
     }
-    console.log('fetch ' + data.url + ' use: ' + (Date.now() - start) / 1000 + 's');
+    console.log('fetch ' + data.url +' <'+datas.httpResponseCode +'> use: ' + (Date.now() - start) / 1000 + 's');
     return next();
 }
 
