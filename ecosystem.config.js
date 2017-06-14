@@ -47,7 +47,7 @@ module.exports = {
             env: {
                 NODE_ENV: 'development'
             },
-            // 'pre-setup': 'mkdir -p /var/www/plum/development/logs',
+            'pre-setup': 'mkdir -p /var/www/plum/development/logs',
             'post-deploy': 'npm install --registry=https://registry.npm.taobao.org && pm2 reload ecosystem.config.js --env development'
         }
     }
