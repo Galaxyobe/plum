@@ -23,6 +23,7 @@ var electron = Electron();
  * @returns
  */
 async function fetch(req, res, next) {
+    // console.log(req.body);
     let data = req.body;
     if (!data.url) {
         res.send('ERROR: url is expect');
@@ -59,14 +60,20 @@ async function fetch(req, res, next) {
     // if (data.cookies) {
 
     // }
+    let statusCode = 0;
     const start = Date.now();
+    console.log('start fetch ' + data.url);
     try {
         var datas = await electron.fetcher(data.url, settings, data.extra);
+        statusCode = datas.httpResponseCode;
         res.send(datas);
-    } catch (err) {
-        res.send(err);
+    } catch (error) {
+        console.error(error);
+        statusCode = error.httpResponseCode;
+        res.send(error);
     }
-    console.log('fetch ' + data.url +' <'+datas.httpResponseCode +'> use: ' + (Date.now() - start) / 1000 + 's');
+
+    console.log('fetch ' + data.url + ' <' + statusCode + '> use: ' + (Date.now() - start) / 1000 + 's');
     return next();
 }
 

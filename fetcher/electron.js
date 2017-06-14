@@ -28,7 +28,6 @@ function Electron(options) {
     });
 
     App.on('quit', function (event, exitCode) {
-        console.log('run fetch:' + self.windowCount);
         console.log('quit: ' + exitCode);
     });
 
@@ -37,9 +36,9 @@ function Electron(options) {
         : new Promise(resolve => App.once('ready', resolve));
 
     self.options = options || {};
-    setInterval(() => {
-        console.log('running fetch: ' + self.windowCount);
-    }, 60000);
+    // setInterval(() => {
+    //     console.log('running fetch: ' + self.windowCount);
+    // }, 60000);
 }
 
 
@@ -171,6 +170,9 @@ Electron.prototype.fetcher = function fetcher(url, settings, extra) {
                 url: webContents.getURL()
             });
             return new Promise((resolve, reject) => {
+                if (!webContents) {
+                    return reject(new Error('Object has been destroyed'));
+                }
                 webContents.session.cookies.get(details, function (error, cookies) {
                     if (error) {
                         return reject(error);
@@ -183,12 +185,13 @@ Electron.prototype.fetcher = function fetcher(url, settings, extra) {
         webContents.on('crashed', (event, killed) => {
             const error = {
                 errorType: 'crashed',
-                killed: killed
+                killed: killed,
+                httpResponseCode: 500
             };
             return loadFailed(error);
         });
         webContents.on('did-get-response-details', (event, status, newURL, originalURL, httpResponseCode, requestMethod, referrer, headers, resourceType) => {
-            // console.log(Date.now() + ' ' + originalURL + ' ' + resourceType + ' <' + httpResponseCode + '>');
+            // console.log('response details' + Date.now() + ' ' + originalURL + ' ' + resourceType + ' <' + httpResponseCode + '>');
             // 处理HttpCode
             if (originalURL === url) {
                 urlResponseHeaders = headers;
@@ -210,6 +213,25 @@ Electron.prototype.fetcher = function fetcher(url, settings, extra) {
                         return loadFailed(error);
                     }
                 }
+            }
+        });
+        webContents.on('did-get-redirect-request', (event, oldURL, newURL, isMainFrame, httpResponseCode, requestMethod, referrer, headers) => {
+            // console.log('redirect request' + Date.now() + ' ' + oldURL + ' redirect to ' + newURL + ' <' + httpResponseCode + '>');
+            if (oldURL === url) {
+                urlResponseHeaders = headers;
+                webContents.stop();
+                const error = {
+                    errorType: 'handler-redirect',
+                    status: status,
+                    oldURL: oldURL,
+                    newURL: newURL,
+                    isMainFrame: isMainFrame,
+                    httpResponseCode: httpResponseCode,
+                    requestMethod: requestMethod,
+                    referrer: referrer,
+                    headers: headers
+                };
+                return loadFailed(error);
             }
         });
         webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL, isMainFrame) => {
@@ -254,6 +276,7 @@ Electron.prototype.fetcher = function fetcher(url, settings, extra) {
                 .then((result) => {
                     clearTimeout(executeTimer);
                     // console.log('will return at ' + settings.returnTimeout);
+                    // 延时返回 针对will-navigate
                     returnTimer = setTimeout(() => {
                         result.httpResponseCode = 200;
                         return loadSucceed(result);
@@ -285,7 +308,7 @@ Electron.prototype.fetcher = function fetcher(url, settings, extra) {
                             cookie: cookie,
                             httpResponseCode: 406
                         };
-                        event.emit('load-failed', err);
+                        return loadFailed(err);
                     }
                 });
             }
@@ -308,6 +331,4 @@ Electron.prototype.fetcher = function fetcher(url, settings, extra) {
         }, settings.fetchTimeout);
     }));
 };
-
-
 
