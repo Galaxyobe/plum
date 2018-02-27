@@ -56,10 +56,10 @@ function getCookies(headers) {
  *          see http://phantomjs.org/api/webpage/property/settings.html
  * @param {pool} pool 连接池对象
  * @param {String} url
- * @param {Object} settings fetcher的设置
+ * @param {Object} settings fetch的设置
  * @param {Object} extra extra数据原样返回
  */
-function fetcher(pool, url, settings, extra) {
+function fetch(pool, url, settings, extra) {
     // Automatically acquires a phantom instance and releases it back to the
     // pool when the function resolves or throws
     return pool.use(async (instance) => {
@@ -202,5 +202,5 @@ function fetcher(pool, url, settings, extra) {
 module.exports = {
     newPool: newPool,
     freePool: freePool,
-    fetcher: fetcher
+    fetch: fetch
 };

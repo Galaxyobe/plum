@@ -1,4 +1,4 @@
-module.exports = {
+module.exports.electron = {
     save: {
         // saveToPdf: true,
         // saveToPdfPath: 'pdf'
@@ -35,5 +35,30 @@ module.exports = {
     contents: {
         userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36',
         extraHeaders: 'pragma: no-cache\n'
+    }
+};
+
+module.exports.chrome = {
+    images: false,
+    stealth: true,
+    fetchTimeout: 60000,
+    returnTimeout: 5000,
+    contents: {
+        userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36',
+        headers: { pragma: 'no-cache' }
+    },
+    policy: {
+        handlerReturn: true,
+        handlerHttpCode: [403, 503, 504]
+    }
+};
+
+module.exports.phantom = {
+    render: true,
+    proxy: 'http://127.0.0.1:8888',
+    timeout: 10 * 1000,
+    settings: {
+        resourceTimeout: 1000, // ms
+        userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36'
     }
 };

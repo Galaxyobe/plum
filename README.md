@@ -1,5 +1,13 @@
 # Plum
 
+动态网页下载器
+
+## 依赖工具
+
+* ChromeHeadless
+* Electron
+* Phantom
+
 ## 环境安装
 
 * 安装Node.js

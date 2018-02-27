@@ -1,4 +1,3 @@
-
 const { BrowserWindow } = require('electron');
 const fs = require('fs');
 const moment = require('moment');
@@ -6,11 +5,11 @@ const Promise = require('bluebird');
 
 var App = null;
 
-module.exports = Electron;
+module.exports = ElectronFetcher;
 
-function Electron(options) {
-    if (!(this instanceof Electron)) {
-        return new Electron(options);
+function ElectronFetcher(options) {
+    if (!(this instanceof ElectronFetcher)) {
+        return new ElectronFetcher(options);
     }
     if (!App) {
         App = require('electron').app;
@@ -50,10 +49,10 @@ function Electron(options) {
  *          see http://phantomjs.org/api/webpage/property/settings.html
  * @param {pool} pool 连接池对象
  * @param {String} url
- * @param {Object} settings fetcher的设置
+ * @param {Object} settings fetch的设置
  * @param {Object} extra extra数据原样返回
  */
-Electron.prototype.fetcher = function fetcher(url, settings, extra) {
+ElectronFetcher.prototype.fetch = function (url, settings, extra) {
     var self = this;
     return self.isReady.then(() => new Promise((resolve, reject) => {
         // 处理参数
@@ -249,7 +248,7 @@ Electron.prototype.fetcher = function fetcher(url, settings, extra) {
             // console.log('will-navigate ' + url);
             clearTimeout(returnTimer);
         });
-        webContents.on('did-finish-load', () => {
+        webContents.on('did-finish-load', async () => {
             // console.log('did-finish-load');
             // 获取document
             const js = `(function(){ 
@@ -272,16 +271,13 @@ Electron.prototype.fetcher = function fetcher(url, settings, extra) {
                 return loadFailed(error);
             }, settings.executeTimeout);
 
-            webContents.executeJavaScript(js, true)
-                .then((result) => {
-                    clearTimeout(executeTimer);
-                    // console.log('will return at ' + settings.returnTimeout);
-                    // 延时返回 针对will-navigate
-                    returnTimer = setTimeout(() => {
-                        result.httpResponseCode = 200;
-                        return loadSucceed(result);
-                    }, settings.returnTimeout);
-                });
+            let result = await webContents.executeJavaScript(js, true);
+            clearTimeout(executeTimer);
+            // 延时返回 针对will-navigate
+            returnTimer = setTimeout(() => {
+                result.httpResponseCode = 200;
+                return loadSucceed(result);
+            }, settings.returnTimeout);
         });
         // 获取session
         const ses = win.webContents.session;

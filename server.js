@@ -1,5 +1,6 @@
 const restify = require('restify');
-const routes = require('./routes');
+const Config = require('./config');
+
 
 var server = restify.createServer({
     name: 'fetch app',
@@ -11,15 +12,29 @@ server.use(restify.queryParser());
 server.use(restify.bodyParser());
 
 
+if (Config.fetcher.ElectronFetcher) {
+    const electronFetcher = require('./routes/electron');
+    server.post('/electron/fetch', electronFetcher.fetch);
+}
+
+if (Config.fetcher.ChromeHeadlessFetcher) {
+    const chromeFetcher = require('./routes/chrome');
+    server.post('/fetch', chromeFetcher.fetch);
+    server.post('/chrome/fetch', chromeFetcher.fetch);
+}
+
+if (Config.fetcher.PhantomFetcher) {
+    const phantomFetcher = require('./routes/phantom');
+    server.post('/phantom/fetch', phantomFetcher.fetch);
+}
+
 server.get('/', function (req, res, next) {
     res.send(server.name);
     return next();
 });
 
-server.post('/fetch', routes.fetch);
-
 server.listen(3003, function () {
-    console.log('%s listening at %s', server.name, server.url);
+    console.log('%s listening at %s\nfetcher: %s', server.name, server.url, JSON.stringify(Config.fetcher));
 });
 
 module.exports = server;

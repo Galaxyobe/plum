@@ -1,8 +1,24 @@
-const Electron = require('../fetcher/electron');
 const _ = require('lodash');
-const DefaultSettings = require('../fetcher/settings');
+const PhantomFetcher = require('../fetcher/phantom');
+const DefaultSettings = require('../fetcher/settings').phantom;
 
-var electron = Electron();
+const fetcher = PhantomFetcher;
+
+const pool = PhantomFetcher.newPool({
+    max: 10,
+    min: 2,
+    idleTimeoutMillis: 30000,
+    maxUses: 50,
+    validator: () => Promise.resolve(true),
+    testOnBorrow: true
+}, [['--ignore-ssl-errors=true',
+    '--disk-cache=false',
+    '--load-images=true'],
+{ logLevel: 'info' }]
+);
+
+
+// PhantomFetcher.freePool(pool);
 
 /**
  * @description
@@ -11,8 +27,8 @@ var electron = Electron();
  * {
  *  url:'', // 字符串
  *  headers:{ // json
- *    'user-agent':'', // 字符串
- *          },
+ *    'User-Agent':'', // 字符串
+ *  },
  *  proxy: '', // 字符串
  *  cookies:{},
  *  extra:'' // 任意类型 原样返回
@@ -37,38 +53,31 @@ async function fetch(req, res, next) {
     data.extra = data.extra || undefined;
     let settings = _.clone(DefaultSettings);
     // 参数处理
+    // settings.fetchTimeout = 90000;
     // 代理
     if (data.proxy) {
         settings.proxy = data.proxy;
     }
     // 请求头
     if (data.headers) {
-        let _headers = [];
-        for (let key in data.headers) {
-            // 浏览器代理
-            if (key.toLocaleLowerCase() === 'user-agent') {
-                settings.contents.userAgent = data.headers[key];
-            } else {
-                // 其他选项
-                _headers.push(key + ':' + data.headers[key]);
-            }
+        if ('User-Agent' in data.headers) {
+            settings.contents.userAgent = data.headers['User-Agent'];
         }
-        // 组成electron的请求头格式
-        settings.contents.extraHeaders = _headers.join('\n');
+        settings.contents.headers = data.headers;
     }
     // cookies
     // if (data.cookies) {
 
     // }
     let statusCode = 0;
-    const start = Date.now();
     console.log('start fetch ' + data.url);
+    const start = Date.now();
     try {
-        var datas = await electron.fetcher(data.url, settings, data.extra);
+        var datas = await fetcher.fetch(pool, data.url, settings, data.extra);
         statusCode = datas.httpResponseCode;
         res.send(datas);
     } catch (error) {
-        console.error(error);
+        // console.error(error);
         statusCode = error.httpResponseCode;
         res.send(error);
     }

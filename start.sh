@@ -1,2 +1,4 @@
 #!/bin/bash
-./node_modules/.bin/electron .
+./script/start-chrome-headless.sh &
+echo 'start plum...'
+node index.js &

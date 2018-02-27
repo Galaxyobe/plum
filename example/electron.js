@@ -15,7 +15,7 @@ app.on('window-all-closed', function () {
         app.quit();
     }
 });
-// 当 Electron 完成了初始化并且准备创建浏览器窗口的时候
+// 当 ElectronFetcher 完成了初始化并且准备创建浏览器窗口的时候
 // 这个方法就被调用
 app.on('ready', function () {
     // 创建浏览器窗口。

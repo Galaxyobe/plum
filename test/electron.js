@@ -1,7 +1,7 @@
-const Electron = require('../fetcher/electron');
+const ElectronFetcher = require('../fetcher/electron');
 
 
-var electron = Electron();
+var electron = ElectronFetcher();
 
 
 const settings = {
@@ -52,7 +52,7 @@ let urls = [
 urls.forEach(url => {
     setTimeout(() => {
         const start = Date.now();
-        electron.fetcher(url, settings).then(datas => {
+        electron.fetch(url, settings).then(datas => {
             console.log('datas:' + JSON.stringify(datas));
             console.log('fetch ' + url + ' use: ' + (Date.now() - start) / 1000 + 's');
         }).catch(err => {
